@@ -4,9 +4,13 @@
 
 package frc.robot.subsystems;
 
+import com.ctre.phoenix.motorcontrol.FeedbackDevice;
+import com.ctre.phoenix.motorcontrol.TalonSRXSimCollection;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.Encoder;
-import edu.wpi.first.wpilibj.PWMVictorSPX;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
@@ -24,35 +28,41 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpiutil.math.VecBuilder;
 
-public class DriveSubsystem extends SubsystemBase {
-  // The motors on the left side of the drive.
-  private final SpeedControllerGroup m_leftMotors =
-      new SpeedControllerGroup(
-          new PWMVictorSPX(DriveConstants.kLeftMotor1Port),
-          new PWMVictorSPX(DriveConstants.kLeftMotor2Port));
 
-  // The motors on the right side of the drive.
-  private final SpeedControllerGroup m_rightMotors =
-      new SpeedControllerGroup(
-          new PWMVictorSPX(DriveConstants.kRightMotor1Port),
-          new PWMVictorSPX(DriveConstants.kRightMotor2Port));
+
+public class DriveSubsystem extends SubsystemBase {
+
+  private WPI_TalonSRX leftTalon1 = new WPI_TalonSRX(1);
+  private WPI_TalonSRX leftTalon2 = new WPI_TalonSRX(2);
+  private WPI_TalonSRX leftTalon3 = new WPI_TalonSRX(3);
+  private WPI_TalonSRX rightTalon1 = new WPI_TalonSRX(4);
+  private WPI_TalonSRX rightTalon2 = new WPI_TalonSRX(5);
+  private WPI_TalonSRX rightTalon3 = new WPI_TalonSRX(6);
+
+ // The motors on the left side of the drive.
+ private final SpeedControllerGroup m_leftMotors =
+ new SpeedControllerGroup(leftTalon1,leftTalon2,leftTalon3);
+
+// The motors on the right side of the drive.
+private final SpeedControllerGroup m_rightMotors =
+new SpeedControllerGroup(rightTalon1,rightTalon2,rightTalon3);
 
   // The robot's drive
   private final DifferentialDrive m_drive = new DifferentialDrive(m_leftMotors, m_rightMotors);
-
+  
   // The left-side drive encoder
-  private final Encoder m_leftEncoder =
-      new Encoder(
-          DriveConstants.kLeftEncoderPorts[0],
-          DriveConstants.kLeftEncoderPorts[1],
-          DriveConstants.kLeftEncoderReversed);
+//  private final Encoder m_leftEncoder =
+//       new Encoder(
+//           DriveConstants.kLeftEncoderPorts[0],
+//           DriveConstants.kLeftEncoderPorts[1],
+//           DriveConstants.kLeftEncoderReversed);
 
-  // The right-side drive encoder
-  private final Encoder m_rightEncoder =
-      new Encoder(
-          DriveConstants.kRightEncoderPorts[0],
-          DriveConstants.kRightEncoderPorts[1],
-          DriveConstants.kRightEncoderReversed);
+//  // The right-side drive encoder
+//   private final Encoder m_rightEncoder =
+//       new Encoder(
+//           DriveConstants.kRightEncoderPorts[0],
+//           DriveConstants.kRightEncoderPorts[1],
+//           DriveConstants.kRightEncoderReversed);
 
   // The gyro sensor
   private final ADXRS450_Gyro m_gyro = new ADXRS450_Gyro();
@@ -62,8 +72,9 @@ public class DriveSubsystem extends SubsystemBase {
 
   // These classes help us simulate our drivetrain
   public DifferentialDrivetrainSim m_drivetrainSimulator;
-  private EncoderSim m_leftEncoderSim;
-  private EncoderSim m_rightEncoderSim;
+ // private EncoderSim m_leftEncoderSim;
+  // private EncoderSim m_rightEncoderSim;
+  private TalonSRXSimCollection leftTalonSim;
   // The Field2d class shows the field in the sim GUI
   private Field2d m_fieldSim;
   private ADXRS450_GyroSim m_gyroSim;
@@ -71,9 +82,11 @@ public class DriveSubsystem extends SubsystemBase {
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
     // Sets the distance per pulse for the encoders
-    m_leftEncoder.setDistancePerPulse(DriveConstants.kEncoderDistancePerPulse);
-    m_rightEncoder.setDistancePerPulse(DriveConstants.kEncoderDistancePerPulse);
-
+    //m_leftEncoder.setDistancePerPulse(DriveConstants.kEncoderDistancePerPulse);
+    //m_rightEncoder.setDistancePerPulse(DriveConstants.kEncoderDistancePerPulse);
+    leftTalon1.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder);
+    rightTalon1.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder);
+    
     resetEncoders();
     m_odometry = new DifferentialDriveOdometry(Rotation2d.fromDegrees(getHeading()));
 
