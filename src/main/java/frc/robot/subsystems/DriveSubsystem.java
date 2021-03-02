@@ -7,7 +7,7 @@ package frc.robot.subsystems;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.TalonSRXSimCollection;
 import com.ctre.phoenix.motorcontrol.can.TalonFX;
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.Encoder;
@@ -32,12 +32,12 @@ import edu.wpi.first.wpiutil.math.VecBuilder;
 
 public class DriveSubsystem extends SubsystemBase {
 
-  private WPI_TalonFX leftTalon1 = new WPI_TalonFX(1);
-  private WPI_TalonFX leftTalon2 = new WPI_TalonFX(2);
-  private WPI_TalonFX leftTalon3 = new WPI_TalonFX(3);
-  private WPI_TalonFX rightTalon1 = new WPI_TalonFX(4);
-  private WPI_TalonFX rightTalon2 = new WPI_TalonFX(5);
-  private WPI_TalonFX rightTalon3 = new WPI_TalonFX(6);
+  private WPI_TalonSRX leftTalon1 = new WPI_TalonSRX(1);
+  private WPI_TalonSRX leftTalon2 = new WPI_TalonSRX(2);
+  private WPI_TalonSRX leftTalon3 = new WPI_TalonSRX(3);
+  private WPI_TalonSRX rightTalon1 = new WPI_TalonSRX(4);
+  private WPI_TalonSRX rightTalon2 = new WPI_TalonSRX(5);
+  private WPI_TalonSRX rightTalon3 = new WPI_TalonSRX(6);
 
  // The motors on the left side of the drive.
  private final SpeedControllerGroup m_leftMotors =
@@ -83,7 +83,7 @@ new SpeedControllerGroup(rightTalon1,rightTalon2,rightTalon3);
   public DriveSubsystem() {
     // Sets the distance per pulse for the encoders
     //m_leftEncoder.setDistancePerPulse(DriveConstants.kEncoderDistancePerPulse);
-    //m_rightEncoder.setDistancePerPulse(DriveConstants.kEncoderDistancePerPulse);
+  //  m_rightEncoder.setDistancePerPulse(DriveConstants.kEncoderDistancePerPulse);
     leftTalon1.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder);
     rightTalon1.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder);
     
@@ -102,8 +102,8 @@ new SpeedControllerGroup(rightTalon1,rightTalon2,rightTalon3);
               VecBuilder.fill(0, 0, 0.0001, 0.1, 0.1, 0.005, 0.005));
 
       // The encoder and gyro angle sims let us set simulated sensor readings
-      m_leftEncoderSim = new EncoderSim(m_leftEncoder);
-      m_rightEncoderSim = new EncoderSim(m_rightEncoder);
+    //  m_leftEncoderSim = new EncoderSim(m_leftEncoder);
+    //  m_rightEncoderSim = new EncoderSim(m_rightEncoder);
       m_gyroSim = new ADXRS450_GyroSim(m_gyro);
 
       // the Field2d class lets us visualize our robot in the simulation GUI.
@@ -117,8 +117,8 @@ new SpeedControllerGroup(rightTalon1,rightTalon2,rightTalon3);
     // Update the odometry in the periodic block
     m_odometry.update(
         Rotation2d.fromDegrees(getHeading()),
-        m_leftEncoder.getDistance(),
-        m_rightEncoder.getDistance());
+        leftTalon1.getActiveTrajectoryPosition(),
+        rightTalon1.getActiveTrajectoryPosition());
     m_fieldSim.setRobotPose(getPose());
   }
 
@@ -133,10 +133,15 @@ new SpeedControllerGroup(rightTalon1,rightTalon2,rightTalon3);
         -m_rightMotors.get() * RobotController.getBatteryVoltage());
     m_drivetrainSimulator.update(0.020);
 
-    m_leftEncoderSim.setDistance(m_drivetrainSimulator.getLeftPositionMeters());
-    m_leftEncoderSim.setRate(m_drivetrainSimulator.getLeftVelocityMetersPerSecond());
-    m_rightEncoderSim.setDistance(m_drivetrainSimulator.getRightPositionMeters());
-    m_rightEncoderSim.setRate(m_drivetrainSimulator.getRightVelocityMetersPerSecond());
+  //  m_leftEncoderSim.setDistance(m_drivetrainSimulator.getLeftPositionMeters());
+  //  m_leftEncoderSim.setRate(m_drivetrainSimulator.getLeftVelocityMetersPerSecond());
+  //  m_rightEncoderSim.setDistance(m_drivetrainSimulator.getRightPositionMeters());
+  //  m_rightEncoderSim.setRate(m_drivetrainSimulator.getRightVelocityMetersPerSecond());
+    leftTalon1.getSimCollection().setAnalogPosition((int)m_drivetrainSimulator.getLeftPositionMeters());
+    leftTalon1.getSimCollection().setAnalogVelocity((int)m_drivetrainSimulator.getLeftVelocityMetersPerSecond());
+    rightTalon1.getSimCollection().setAnalogPosition((int)m_drivetrainSimulator.getRightPositionMeters());
+    rightTalon1.getSimCollection().setAnalogVelocity((int)m_drivetrainSimulator.getRightVelocityMetersPerSecond());
+    
     m_gyroSim.setAngle(-m_drivetrainSimulator.getHeading().getDegrees());
   }
 
@@ -165,7 +170,8 @@ new SpeedControllerGroup(rightTalon1,rightTalon2,rightTalon3);
    * @return The current wheel speeds.
    */
   public DifferentialDriveWheelSpeeds getWheelSpeeds() {
-    return new DifferentialDriveWheelSpeeds(m_leftEncoder.getRate(), m_rightEncoder.getRate());
+  //  return new DifferentialDriveWheelSpeeds(m_leftEncoder.getRate(), m_rightEncoder.getRate());
+  return new DifferentialDriveWheelSpeeds(leftTalon1.getSelectedSensorVelocity(), rightTalon1.getSelectedSensorVelocity());
   }
 
   /**
@@ -208,8 +214,9 @@ new SpeedControllerGroup(rightTalon1,rightTalon2,rightTalon3);
 
   /** Resets the drive encoders to currently read a position of 0. */
   public void resetEncoders() {
-    m_leftEncoder.reset();
-    m_rightEncoder.reset();
+  //  m_leftEncoder.reset();
+  //  m_rightEncoder.reset();
+   // leftTalon1.
   }
 
   /**
@@ -218,26 +225,26 @@ new SpeedControllerGroup(rightTalon1,rightTalon2,rightTalon3);
    * @return the average of the two encoder readings
    */
   public double getAverageEncoderDistance() {
-    return (m_leftEncoder.getDistance() + m_rightEncoder.getDistance()) / 2.0;
+    return (leftTalon1.getSelectedSensorPosition() + rightTalon1.getSelectedSensorPosition()) / 2.0;
   }
 
-  /**
-   * Gets the left drive encoder.
-   *
-   * @return the left drive encoder
-   */
-  public Encoder getLeftEncoder() {
-    return m_leftEncoder;
-  }
+  // /**
+  //  * Gets the left drive encoder.
+  //  *
+  //  * @return the left drive encoder
+  //  */
+  // //public Encoder getLeftEncoder() {
+  //   return m_leftEncoder;
+  // }
 
-  /**
-   * Gets the right drive encoder.
-   *
-   * @return the right drive encoder
-   */
-  public Encoder getRightEncoder() {
-    return m_rightEncoder;
-  }
+  // /**
+  //  * Gets the right drive encoder.
+  // //  *
+  // //  * @return the right drive encoder
+  // //  */
+  // public Encoder getRightEncoder() {
+  //   return m_rightEncoder;
+  // }
 
   /**
    * Sets the max output of the drive. Useful for scaling the drive to drive more slowly.
