@@ -6,8 +6,8 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.TalonSRXSimCollection;
-import com.ctre.phoenix.motorcontrol.can.TalonSRX;
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+import com.ctre.phoenix.motorcontrol.can.TalonFX;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.Encoder;
@@ -32,12 +32,12 @@ import edu.wpi.first.wpiutil.math.VecBuilder;
 
 public class DriveSubsystem extends SubsystemBase {
 
-  private WPI_TalonSRX leftTalon1 = new WPI_TalonSRX(1);
-  private WPI_TalonSRX leftTalon2 = new WPI_TalonSRX(2);
-  private WPI_TalonSRX leftTalon3 = new WPI_TalonSRX(3);
-  private WPI_TalonSRX rightTalon1 = new WPI_TalonSRX(4);
-  private WPI_TalonSRX rightTalon2 = new WPI_TalonSRX(5);
-  private WPI_TalonSRX rightTalon3 = new WPI_TalonSRX(6);
+  private WPI_TalonFX leftTalon1 = new WPI_TalonFX(1);
+  private WPI_TalonFX leftTalon2 = new WPI_TalonFX(2);
+  private WPI_TalonFX leftTalon3 = new WPI_TalonFX(3);
+  private WPI_TalonFX rightTalon1 = new WPI_TalonFX(4);
+  private WPI_TalonFX rightTalon2 = new WPI_TalonFX(5);
+  private WPI_TalonFX rightTalon3 = new WPI_TalonFX(6);
 
  // The motors on the left side of the drive.
  private final SpeedControllerGroup m_leftMotors =
