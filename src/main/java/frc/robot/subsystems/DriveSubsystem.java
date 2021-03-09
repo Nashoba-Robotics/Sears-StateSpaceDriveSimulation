@@ -25,6 +25,7 @@ import edu.wpi.first.wpilibj.simulation.DifferentialDrivetrainSim;
 import edu.wpi.first.wpilibj.simulation.EncoderSim;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.util.Units;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpiutil.math.VecBuilder;
 
@@ -79,6 +80,15 @@ new SpeedControllerGroup(rightTalon1,rightTalon2,rightTalon3);
   private Field2d m_fieldSim;
   private ADXRS450_GyroSim m_gyroSim;
 
+  final int kCountsPerRev = 2048;  //Encoder counts per revolution of the motor shaft.
+  final double kSensorGearRatio = 1; //Gear ratio is the ratio between the *encoder* and the wheels.  On the AndyMark drivetrain, encoders mount 1:1 with the gearbox shaft.
+  final double kGearRatio = 8.33; //Switch kSensorGearRatio to this gear ratio if encoder is on the motor instead of on the gearbox.
+  final double kWheelRadiusInches = 3;
+  final int k100msPerSecond = 10;
+
+  TalonSRXSimCollection m_leftMotorSim = leftTalon1.getSimCollection();
+  TalonSRXSimCollection m_rightMotorSim = rightTalon1.getSimCollection();
+
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
     // Sets the distance per pulse for the encoders
@@ -116,10 +126,32 @@ new SpeedControllerGroup(rightTalon1,rightTalon2,rightTalon3);
   public void periodic() {
     // Update the odometry in the periodic block
     m_odometry.update(
-        Rotation2d.fromDegrees(getHeading()),
-        leftTalon1.getActiveTrajectoryPosition(),
-        rightTalon1.getActiveTrajectoryPosition());
+        m_gyro.getRotation2d(),
+                      nativeUnitsToDistanceMeters(leftTalon1.getSelectedSensorPosition()),
+                      nativeUnitsToDistanceMeters(rightTalon1.getSelectedSensorPosition()));
     m_fieldSim.setRobotPose(getPose());
+  }
+
+  private int distanceToNativeUnits(double positionMeters){
+    double wheelRotations = positionMeters/(2 * Math.PI * Units.inchesToMeters(kWheelRadiusInches));
+    double motorRotations = wheelRotations * kSensorGearRatio;
+    int sensorCounts = (int)(motorRotations * kCountsPerRev);
+    return sensorCounts;
+  }
+
+  private int velocityToNativeUnits(double velocityMetersPerSecond){
+    double wheelRotationsPerSecond = velocityMetersPerSecond/(2 * Math.PI * Units.inchesToMeters(kWheelRadiusInches));
+    double motorRotationsPerSecond = wheelRotationsPerSecond * kSensorGearRatio;
+    double motorRotationsPer100ms = motorRotationsPerSecond / k100msPerSecond;
+    int sensorCountsPer100ms = (int)(motorRotationsPer100ms * kCountsPerRev);
+    return sensorCountsPer100ms;
+  }
+
+  private double nativeUnitsToDistanceMeters(double sensorCounts){
+    double motorRotations = (double)sensorCounts / kCountsPerRev;
+    double wheelRotations = motorRotations / kSensorGearRatio;
+    double positionMeters = wheelRotations * (2 * Math.PI * Units.inchesToMeters(kWheelRadiusInches));
+    return positionMeters;
   }
 
   @Override
@@ -129,20 +161,38 @@ new SpeedControllerGroup(rightTalon1,rightTalon2,rightTalon3);
     // We negate the right side so that positive voltages make the right side
     // move forward.
     m_drivetrainSimulator.setInputs(
-        m_leftMotors.get() * RobotController.getBatteryVoltage(),
-        -m_rightMotors.get() * RobotController.getBatteryVoltage());
+        leftTalon1.getMotorOutputVoltage(),
+        rightTalon1.getMotorOutputVoltage());
     m_drivetrainSimulator.update(0.020);
 
   //  m_leftEncoderSim.setDistance(m_drivetrainSimulator.getLeftPositionMeters());
   //  m_leftEncoderSim.setRate(m_drivetrainSimulator.getLeftVelocityMetersPerSecond());
   //  m_rightEncoderSim.setDistance(m_drivetrainSimulator.getRightPositionMeters());
   //  m_rightEncoderSim.setRate(m_drivetrainSimulator.getRightVelocityMetersPerSecond());
-    leftTalon1.getSimCollection().setAnalogPosition((int)m_drivetrainSimulator.getLeftPositionMeters());
-    leftTalon1.getSimCollection().setAnalogVelocity((int)m_drivetrainSimulator.getLeftVelocityMetersPerSecond());
-    rightTalon1.getSimCollection().setAnalogPosition((int)m_drivetrainSimulator.getRightPositionMeters());
-    rightTalon1.getSimCollection().setAnalogVelocity((int)m_drivetrainSimulator.getRightVelocityMetersPerSecond());
+    /*m_leftMotorSim.setAnalogPosition((int)m_drivetrainSimulator.getLeftPositionMeters());
+    m_leftMotorSim.setAnalogVelocity((int)m_drivetrainSimulator.getLeftVelocityMetersPerSecond());
+    m_rightMotorSim.setAnalogPosition((int)m_drivetrainSimulator.getRightPositionMeters());
+    m_rightMotorSim.setAnalogVelocity((int)m_drivetrainSimulator.getRightVelocityMetersPerSecond()); */
+
+    m_leftMotorSim.setQuadratureRawPosition(
+      distanceToNativeUnits(
+        m_drivetrainSimulator.getLeftPositionMeters()));
+m_leftMotorSim.setQuadratureVelocity(
+      velocityToNativeUnits(
+        m_drivetrainSimulator.getLeftVelocityMetersPerSecond()));
+m_rightMotorSim.setQuadratureRawPosition(
+      distanceToNativeUnits(
+        m_drivetrainSimulator.getRightPositionMeters()));
+m_rightMotorSim.setQuadratureVelocity(
+      velocityToNativeUnits(
+        m_drivetrainSimulator.getRightVelocityMetersPerSecond()));
+m_gyroSim.setAngle(-m_drivetrainSimulator.getHeading().getDegrees());
+
     
     m_gyroSim.setAngle(-m_drivetrainSimulator.getHeading().getDegrees());
+ 
+    m_leftMotorSim.setBusVoltage(RobotController.getBatteryVoltage());
+    m_rightMotorSim.setBusVoltage(RobotController.getBatteryVoltage());
   }
 
   /**
