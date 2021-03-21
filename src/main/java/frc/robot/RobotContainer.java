@@ -13,10 +13,12 @@ import edu.wpi.first.wpilibj.XboxController.Button;
 import edu.wpi.first.wpilibj.controller.PIDController;
 import edu.wpi.first.wpilibj.controller.RamseteController;
 import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
+import frc.robot.commands.DriveDistanceCommand;
 import frc.robot.subsystems.DriveSubsystem;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.geometry.Translation2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.trajectory.Trajectory;
 import edu.wpi.first.wpilibj.trajectory.TrajectoryConfig;
 import edu.wpi.first.wpilibj.trajectory.TrajectoryGenerator;
@@ -56,7 +58,7 @@ public class RobotContainer {
                 m_robotDrive.arcadeDrive(
                     -m_driverController.getRawAxis(1),
                     m_driverController.getRawAxis(0)),
-        
+
             m_robotDrive));
   }
 
@@ -71,6 +73,8 @@ public class RobotContainer {
     new JoystickButton(m_driverController, Button.kBumperRight.value)
         .whenPressed(() -> m_robotDrive.setMaxOutput(0.5))
         .whenReleased(() -> m_robotDrive.setMaxOutput(1));
+
+    SmartDashboard.putData(new DriveDistanceCommand(getRobotDrive(), 5));
   }
 
   public DriveSubsystem getRobotDrive() {
