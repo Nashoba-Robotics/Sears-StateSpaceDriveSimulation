@@ -5,17 +5,15 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
-import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.TalonSRXSimCollection;
-import com.ctre.phoenix.motorcontrol.can.TalonFX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
-import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import frc.robot.Robot;
 import frc.robot.Constants.DriveConstants;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
@@ -23,7 +21,6 @@ import edu.wpi.first.wpilibj.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.wpilibj.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.wpilibj.simulation.ADXRS450_GyroSim;
 import edu.wpi.first.wpilibj.simulation.DifferentialDrivetrainSim;
-import edu.wpi.first.wpilibj.simulation.EncoderSim;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Units;
@@ -48,20 +45,6 @@ public class DriveSubsystem extends SubsystemBase {
   // The robot's drive
   private final DifferentialDrive m_drive = new DifferentialDrive(m_leftMotors, m_rightMotors);
 
-  // The left-side drive encoder
-  // private final Encoder m_leftEncoder =
-  // new Encoder(
-  // DriveConstants.kLeftEncoderPorts[0],
-  // DriveConstants.kLeftEncoderPorts[1],
-  // DriveConstants.kLeftEncoderReversed);
-
-  // // The right-side drive encoder
-  // private final Encoder m_rightEncoder =
-  // new Encoder(
-  // DriveConstants.kRightEncoderPorts[0],
-  // DriveConstants.kRightEncoderPorts[1],
-  // DriveConstants.kRightEncoderReversed);
-
   // The gyro sensor
   private final ADXRS450_Gyro m_gyro = new ADXRS450_Gyro();
 
@@ -70,9 +53,7 @@ public class DriveSubsystem extends SubsystemBase {
 
   // These classes help us simulate our drivetrain
   public DifferentialDrivetrainSim m_drivetrainSimulator;
-  // private EncoderSim m_leftEncoderSim;
-  // private EncoderSim m_rightEncoderSim;
-  private TalonSRXSimCollection leftTalonSim;
+
   // The Field2d class shows the field in the sim GUI
   private Field2d m_fieldSim;
   private ADXRS450_GyroSim m_gyroSim;
@@ -102,39 +83,16 @@ public class DriveSubsystem extends SubsystemBase {
     rightTalon2.follow(rightTalon1);
     rightTalon3.follow(rightTalon1);
 
-    leftTalon2.setInverted(InvertType.FollowMaster);
-    leftTalon3.setInverted(InvertType.FollowMaster);
-    rightTalon2.setInverted(InvertType.FollowMaster);
-    rightTalon3.setInverted(InvertType.FollowMaster);
-
-    // These "Real" settings should be changed to match your robot.
-    if (RobotBase.isReal()) { // We don't know if this is correct (wrong values), and w
-      // On our real robot, the left side is positive forward and
-      // sensor is in phase by default, so don't change it
-      leftTalon1.setInverted(InvertType.None);
-      leftTalon1.setSensorPhase(false);
-
-      // On the real robot, the right side sensor is already in phase but
-      // the right side output needs to be inverted so that positive is forward.
-      rightTalon1.setInverted(InvertType.InvertMotorOutput);
-      rightTalon1.setSensorPhase(false);
-    } else {
-      // Drive simulator expects positive motor outputs for forward
-      // and returns positive encoder values, so we don't need to
-      // invert or set sensor phase.
-      leftTalon1.setInverted(InvertType.None);
-      leftTalon1.setSensorPhase(false);
-      rightTalon1.setInverted(InvertType.None);
-      rightTalon1.setSensorPhase(false);
+    if (Robot.isSimulation()) {
+      // Robot drive inverts the right side by default, but in the simulation
+      // we want both sides to have positive be forward
+      m_drive.setRightSideInverted(false);
     }
 
     // Sets the distance per pulse for the encoders
-    // m_leftEncoder.setDistancePerPulse(DriveConstants.kEncoderDistancePerPulse);
-    // m_rightEncoder.setDistancePerPulse(DriveConstants.kEncoderDistancePerPulse);
     leftTalon1.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder);
     rightTalon1.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder);
 
-    resetEncoders();
     m_odometry = new DifferentialDriveOdometry(Rotation2d.fromDegrees(getHeading()));
 
     if (RobotBase.isSimulation()) { // If our robot is simulated
@@ -144,8 +102,6 @@ public class DriveSubsystem extends SubsystemBase {
           DriveConstants.kWheelDiameterMeters / 2.0, VecBuilder.fill(0, 0, 0.0001, 0.1, 0.1, 0.005, 0.005));
 
       // The encoder and gyro angle sims let us set simulated sensor readings
-      // m_leftEncoderSim = new EncoderSim(m_leftEncoder);
-      // m_rightEncoderSim = new EncoderSim(m_rightEncoder);
       m_gyroSim = new ADXRS450_GyroSim(m_gyro);
 
       // the Field2d class lets us visualize our robot in the simulation GUI.
@@ -203,6 +159,8 @@ public class DriveSubsystem extends SubsystemBase {
 
     m_leftMotorSim.setBusVoltage(RobotController.getBatteryVoltage());
     m_rightMotorSim.setBusVoltage(RobotController.getBatteryVoltage());
+
+    SmartDashboard.putNumber("Encoder average distance", getAverageEncoderDistance());
   }
 
   /**
@@ -231,8 +189,6 @@ public class DriveSubsystem extends SubsystemBase {
    * @return The current wheel speeds.
    */
   public DifferentialDriveWheelSpeeds getWheelSpeeds() {
-    // return new DifferentialDriveWheelSpeeds(m_leftEncoder.getRate(),
-    // m_rightEncoder.getRate());
     return new DifferentialDriveWheelSpeeds(leftTalon1.getSelectedSensorVelocity(),
         rightTalon1.getSelectedSensorVelocity());
   }
@@ -243,7 +199,8 @@ public class DriveSubsystem extends SubsystemBase {
    * @param pose The pose to which to set the odometry.
    */
   public void resetOdometry(Pose2d pose) {
-    resetEncoders();
+    leftTalon1.setSelectedSensorPosition(0);
+    rightTalon1.setSelectedSensorPosition(0);
     m_drivetrainSimulator.setPose(pose);
     m_odometry.resetPosition(pose, Rotation2d.fromDegrees(getHeading()));
   }
@@ -275,39 +232,14 @@ public class DriveSubsystem extends SubsystemBase {
     m_drive.feed();
   }
 
-  /** Resets the drive encoders to currently read a position of 0. */
-  public void resetEncoders() {
-    // m_leftEncoder.reset();
-    // m_rightEncoder.reset();
-    // leftTalon1.
-  }
-
   /**
    * Gets the average distance of the two encoders.
    *
    * @return the average of the two encoder readings
    */
   public double getAverageEncoderDistance() {
-    return (leftTalon1.getSelectedSensorPosition() + rightTalon1.getSelectedSensorPosition()) / 2.0;
+    return nativeUnitsToDistanceMeters((leftTalon1.getSelectedSensorPosition() + rightTalon1.getSelectedSensorPosition()) / 2.0);
   }
-
-  // /**
-  // * Gets the left drive encoder.
-  // *
-  // * @return the left drive encoder
-  // */
-  // //public Encoder getLeftEncoder() {
-  // return m_leftEncoder;
-  // }
-
-  // /**
-  // * Gets the right drive encoder.
-  // // *
-  // // * @return the right drive encoder
-  // // */
-  // public Encoder getRightEncoder() {
-  // return m_rightEncoder;
-  // }
 
   /**
    * Sets the max output of the drive. Useful for scaling the drive to drive more
