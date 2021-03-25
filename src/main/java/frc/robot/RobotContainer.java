@@ -26,6 +26,8 @@ import edu.wpi.first.wpilibj2.command.RamseteCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import java.util.List;
+import frc.robot.subsystems.AutonomousDrive;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -45,6 +47,8 @@ public class RobotContainer {
   public RobotContainer() {
     // Configure the button bindings
     configureButtonBindings();
+
+    SmartDashboard.putData("Drive To", new AutonomousDrive(m_robotDrive, 5));
 
     // Configure default commands
     // Set the default drive command to split-stick arcade drive
