@@ -22,8 +22,8 @@ public class AutonomousDrive extends CommandBase{
             m_initialDistance = m_drive.getAverageEncoderDistance();
             onStart = false;
         }
-        m_drive.arcadeDrive(0.7, 0);
-    }
+        m_drive.arcadeDrive(0.7, 0);   //0.7 is the speed (-1 to 1 scale), 0 is the rotation
+       }
 
     @Override
     public boolean isFinished(){
